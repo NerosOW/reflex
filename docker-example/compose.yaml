@@ -1,0 +1,25 @@
+services:
+  backend:
+    image: local/reflex-backend
+    build:
+      context: .
+      args:
+        API_URL: https://${DOMAIN:-localhost}
+
+  frontend:
+    # DOMAIN points to publicly accessible domain where app will be hosted
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
+    ports:
+      - 443:443
+      - 80:80  # for acme-challenge via HTTP
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM local/reflex-backend as backend
+
+        FROM caddy
+        COPY --from=backend /app/.web/_static /srv
+        ADD Caddyfile /etc/caddy/Caddyfile
+    depends_on:
+      - backend
